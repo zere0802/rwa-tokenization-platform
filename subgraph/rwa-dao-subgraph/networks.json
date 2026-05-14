@@ -1,0 +1,8 @@
+{
+  "base-sepolia": {
+    "Governance": {
+      "address": "0x9104016f4393b80f86357db0e27fe1fd49642aa5",
+      "startBlock": 0
+    }
+  }
+}
