@@ -1,184 +1,356 @@
-.counter {
-  font-size: 16px;
-  padding: 5px 10px;
-  border-radius: 5px;
-  color: var(--accent);
-  background: var(--accent-bg);
-  border: 2px solid transparent;
-  transition: border-color 0.3s;
-  margin-bottom: 24px;
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&display=swap');
 
-  &:hover {
-    border-color: var(--accent-border);
-  }
-  &:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Space Grotesk', sans-serif;
+  background: #f5f1e8;
+  color: #2f3a2f;
+}
+
+.app {
+  min-height: 100vh;
+  overflow-x: hidden;
+  background: linear-gradient(
+    135deg,
+    #f5f1e8 0%,
+    #ebe3d1 45%,
+    #dbe4cf 100%
+  );
 }
 
 .hero {
-  position: relative;
-
-  .base,
-  .framework,
-  .vite {
-    inset-inline: 0;
-    margin: 0 auto;
-  }
-
-  .base {
-    width: 170px;
-    position: relative;
-    z-index: 0;
-  }
-
-  .framework,
-  .vite {
-    position: absolute;
-  }
-
-  .framework {
-    z-index: 1;
-    top: 34px;
-    height: 28px;
-    transform: perspective(2000px) rotateZ(300deg) rotateX(44deg) rotateY(39deg)
-      scale(1.4);
-  }
-
-  .vite {
-    z-index: 0;
-    top: 107px;
-    height: 26px;
-    width: auto;
-    transform: perspective(2000px) rotateZ(300deg) rotateX(40deg) rotateY(39deg)
-      scale(0.8);
-  }
+  padding: 60px;
 }
 
-#center {
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 80px;
+}
+
+.logo {
+  font-size: 36px;
+  font-weight: 700;
+  color: #55624c;
+}
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: center;
+}
+
+.hero-subtitle {
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  color: #7a8472;
+  margin-bottom: 20px;
+}
+
+.hero-title {
+  font-size: 90px;
+  line-height: 0.95;
+  font-weight: 700;
+  margin-bottom: 30px;
+  color: #2f3a2f;
+}
+
+.hero-description {
+  font-size: 22px;
+  line-height: 1.7;
+  color: #5c6657;
+  max-width: 600px;
+}
+
+.wallet-card-wrapper {
+  background: #cfd8c0;
+  border-radius: 40px;
+  padding: 40px;
+  box-shadow: 0 15px 40px rgba(65, 78, 54, 0.12);
+}
+
+.wallet-card {
+  background: #faf7f1;
+  border-radius: 30px;
+  padding: 35px;
+}
+
+.wallet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+}
+
+.wallet-title {
+  color: #6f7768;
+  font-size: 14px;
+}
+
+.wallet-address {
+  margin-top: 8px;
+  font-weight: 700;
+  color: #374237;
+}
+
+.network-badge {
+  background: #dce6d2;
+  color: #4f5d49;
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.stats {
   display: flex;
   flex-direction: column;
-  gap: 25px;
-  place-content: center;
-  place-items: center;
-  flex-grow: 1;
-
-  @media (max-width: 1024px) {
-    padding: 32px 20px 24px;
-    gap: 18px;
-  }
+  gap: 20px;
 }
 
-#next-steps {
-  display: flex;
-  border-top: 1px solid var(--border);
-  text-align: left;
-
-  & > div {
-    flex: 1 1 0;
-    padding: 32px;
-    @media (max-width: 1024px) {
-      padding: 24px 20px;
-    }
-  }
-
-  .icon {
-    margin-bottom: 16px;
-    width: 22px;
-    height: 22px;
-  }
-
-  @media (max-width: 1024px) {
-    flex-direction: column;
-    text-align: center;
-  }
+.stat-card {
+  border-radius: 28px;
+  padding: 28px;
 }
 
-#docs {
-  border-right: 1px solid var(--border);
-
-  @media (max-width: 1024px) {
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-  }
+.stat-card.balance {
+  background: #f3ede1;
 }
 
-#next-steps ul {
-  list-style: none;
-  padding: 0;
-  display: flex;
-  gap: 8px;
-  margin: 32px 0 0;
-
-  .logo {
-    height: 18px;
-  }
-
-  a {
-    color: var(--text-h);
-    font-size: 16px;
-    border-radius: 6px;
-    background: var(--social-bg);
-    display: flex;
-    padding: 6px 12px;
-    align-items: center;
-    gap: 8px;
-    text-decoration: none;
-    transition: box-shadow 0.3s;
-
-    &:hover {
-      box-shadow: var(--shadow);
-    }
-    .button-icon {
-      height: 18px;
-      width: 18px;
-    }
-  }
-
-  @media (max-width: 1024px) {
-    margin-top: 20px;
-    flex-wrap: wrap;
-    justify-content: center;
-
-    li {
-      flex: 1 1 calc(50% - 8px);
-    }
-
-    a {
-      width: 100%;
-      justify-content: center;
-      box-sizing: border-box;
-    }
-  }
+.stat-card.votes {
+  background: #eadcc6;
 }
 
-#spacer {
-  height: 88px;
-  border-top: 1px solid var(--border);
-  @media (max-width: 1024px) {
-    height: 48px;
-  }
+.stat-card.delegate {
+  background: #dce6d2;
 }
 
-.ticks {
-  position: relative;
+.stat-label {
+  color: #6f7768;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.stat-value {
+  font-size: 42px;
+  font-weight: 700;
+  color: #2f3a2f;
+}
+
+.delegate-value {
+  font-size: 16px;
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.section {
+  padding: 0 60px 40px;
+}
+
+.section-card {
+  border-radius: 40px;
+  padding: 50px;
+  box-shadow: 0 15px 40px rgba(65, 78, 54, 0.08);
+}
+
+.deposit-card {
+  background: #efe5d3;
+}
+
+.governance-card {
+  background: #dde5d4;
+}
+
+.section-title {
+  font-size: 56px;
+  font-weight: 700;
+  margin-bottom: 40px;
+  color: #2f3a2f;
+}
+
+.input {
   width: 100%;
+  padding: 22px;
+  border: none;
+  border-radius: 24px;
+  background: #faf7f1;
+  font-size: 18px;
+  outline: none;
+  color: #2f3a2f;
+}
 
-  &::before,
-  &::after {
-    content: '';
-    position: absolute;
-    top: -4.5px;
-    border: 5px solid transparent;
+.input-light {
+  background: #f5f1e8;
+}
+
+.deposit-row {
+  display: flex;
+  gap: 20px;
+}
+
+.button {
+  border: none;
+  cursor: pointer;
+  transition: 0.25s ease;
+  font-family: inherit;
+  font-weight: 700;
+}
+
+.button:hover {
+  transform: translateY(-3px);
+  opacity: 0.95;
+}
+
+.connect-btn {
+  background: #55624c;
+  color: white;
+  padding: 16px 28px;
+  border-radius: 999px;
+  font-size: 16px;
+}
+
+.disconnect-btn {
+  background: #9b5e52;
+  color: white;
+  padding: 16px 28px;
+  border-radius: 999px;
+  font-size: 16px;
+}
+
+.deposit-btn {
+  background: #55624c;
+  color: white;
+  padding: 22px 40px;
+  border-radius: 24px;
+  font-size: 18px;
+}
+
+.proposal-btn {
+  background: #76856a;
+  color: white;
+  padding: 18px 30px;
+  border-radius: 24px;
+  font-size: 18px;
+}
+
+.check-btn {
+  background: #55624c;
+  color: white;
+  padding: 20px;
+  border-radius: 22px;
+  width: 100%;
+  margin-top: 20px;
+  font-size: 17px;
+}
+
+.vote-buttons {
+  display: flex;
+  gap: 16px;
+}
+
+.vote-for {
+  flex: 1;
+  background: #6c8a5c;
+  color: white;
+  padding: 22px;
+  border-radius: 22px;
+  font-size: 20px;
+}
+
+.vote-against {
+  flex: 1;
+  background: #b56d5c;
+  color: white;
+  padding: 22px;
+  border-radius: 22px;
+  font-size: 20px;
+}
+
+.gov-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+}
+
+.gov-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+}
+
+.white-card {
+  background: #faf7f1;
+  border-radius: 30px;
+  padding: 35px;
+}
+
+.state-box {
+  margin-top: 24px;
+  background: #f0e8d9;
+  border-radius: 22px;
+  padding: 24px;
+}
+
+.state-value {
+  font-size: 36px;
+  font-weight: 700;
+}
+
+.network-box {
+  margin-top: 40px;
+  background: #dfe7d3;
+  border-radius: 22px;
+  padding: 24px;
+}
+
+.network-value {
+  font-size: 30px;
+  font-weight: 700;
+}
+
+@media (max-width: 1100px) {
+
+  .hero-grid,
+  .gov-grid {
+    grid-template-columns: 1fr;
   }
 
-  &::before {
-    left: 0;
-    border-left-color: var(--border);
+  .hero-title {
+    font-size: 60px;
   }
-  &::after {
-    right: 0;
-    border-right-color: var(--border);
+
+}
+
+@media (max-width: 700px) {
+
+  .hero,
+  .section {
+    padding-left: 20px;
+    padding-right: 20px;
   }
+
+  .hero-title {
+    font-size: 48px;
+  }
+
+  .section-title {
+    font-size: 42px;
+  }
+
+  .deposit-row,
+  .vote-buttons,
+  .gov-header,
+  .navbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
 }

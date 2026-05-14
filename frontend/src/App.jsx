@@ -1,3 +1,5 @@
+import './App.css'
+
 import {
   useAccount,
   useConnect,
@@ -11,12 +13,15 @@ import { injected } from 'wagmi/connectors'
 
 import {
   formatEther,
-  parseEther
+  parseEther,
+  createPublicClient,
+  http,
+  encodeFunctionData
 } from 'viem'
 
 import { useState } from 'react'
-import { createPublicClient, http } from 'viem'
-import { arbitrumSepolia } from 'viem/chains'
+
+import { baseSepolia } from 'viem/chains'
 
 import {
   TOKEN_ADDRESS,
@@ -28,7 +33,7 @@ import {
 } from './contracts'
 
 const publicClient = createPublicClient({
-  chain: arbitrumSepolia,
+  chain: baseSepolia,
   transport: http(),
 })
 
@@ -42,17 +47,21 @@ function App() {
 
   const chainId = useChainId()
 
-  const correctChain = 421614
+  const correctChain = 84532
 
   const [depositAmount, setDepositAmount] = useState('')
   const [proposalId, setProposalId] = useState('')
-const [proposalState, setProposalState] = useState('')
+  const [proposalState, setProposalState] = useState('')
+  const [delegateAddress, setDelegateAddress] = useState('')
 
   const {
     writeContractAsync
   } = useWriteContract()
 
-  const { data: balance } = useReadContract({
+  const {
+    data: balance,
+    refetch: refetchBalance
+  } = useReadContract({
     address: TOKEN_ADDRESS,
     abi: tokenABI,
     functionName: 'balanceOf',
@@ -62,7 +71,10 @@ const [proposalState, setProposalState] = useState('')
     }
   })
 
-  const { data: votes } = useReadContract({
+  const {
+    data: votes,
+    refetch: refetchVotes
+  } = useReadContract({
     address: TOKEN_ADDRESS,
     abi: tokenABI,
     functionName: 'getVotes',
@@ -72,316 +84,544 @@ const [proposalState, setProposalState] = useState('')
     }
   })
 
+  const {
+    data: delegates,
+    refetch: refetchDelegates
+  } = useReadContract({
+    address: TOKEN_ADDRESS,
+    abi: tokenABI,
+    functionName: 'delegates',
+    args: [address],
+    query: {
+      enabled: !!address,
+    }
+  })
+
   async function handleDeposit() {
+
+  try {
+
+    const amount = parseEther(depositAmount)
+
+    const approveHash = await writeContractAsync({
+      address: TOKEN_ADDRESS,
+      abi: tokenABI,
+      functionName: 'approve',
+      args: [VAULT_ADDRESS, amount],
+    })
+
+    await publicClient.waitForTransactionReceipt({
+      hash: approveHash
+    })
+
+    const depositHash = await writeContractAsync({
+      address: VAULT_ADDRESS,
+      abi: vaultABI,
+      functionName: 'deposit',
+      args: [amount, address],
+    })
+
+    await publicClient.waitForTransactionReceipt({
+      hash: depositHash
+    })
+
+    await refetchBalance()
+    await refetchVotes()
+
+    alert('Deposit successful')
+
+  } catch (err) {
+
+    console.log(err)
+
+    if (err.shortMessage) {
+      alert(err.shortMessage)
+    } else {
+      alert('Transaction failed')
+    }
+
+  }
+
+}
+
+ async function delegateVotes() {
+
+  try {
+
+    const hash = await writeContractAsync({
+      address: TOKEN_ADDRESS,
+      abi: tokenABI,
+      functionName: 'delegate',
+      args: [delegateAddress],
+    })
+
+    await publicClient.waitForTransactionReceipt({
+      hash
+    })
+
+    await refetchVotes()
+    await refetchDelegates()
+
+    alert('Delegation successful')
+
+  } catch (err) {
+
+    console.log(err)
+
+    if (err.shortMessage) {
+      alert(err.shortMessage)
+    } else {
+      alert('Delegation failed')
+    }
+
+  }
+
 
     try {
 
-      const amount = parseEther(depositAmount)
-
-      // approve
       await writeContractAsync({
-  address: TOKEN_ADDRESS,
-  abi: tokenABI,
-  functionName: 'approve',
-  args: [VAULT_ADDRESS, amount],
+        address: TOKEN_ADDRESS,
+        abi: tokenABI,
+        functionName: 'delegate',
+        args: [delegateAddress],
+      })
 
-  gas: 300000n,
-  maxFeePerGas: parseEther('0.0000001'),
-  maxPriorityFeePerGas: parseEther('0.00000005'),
-})
-      // deposit
-      await writeContractAsync({
-  address: VAULT_ADDRESS,
-  abi: vaultABI,
-  functionName: 'deposit',
-  args: [amount, address],
+      await refetchVotes()
+      await refetchDelegates()
 
-  gas: 300000n,
-  maxFeePerGas: parseEther('0.0000001'),
-  maxPriorityFeePerGas: parseEther('0.00000005'),
-})
-
-      alert('Deposit successful')
+      alert('Delegation successful')
 
     } catch (err) {
 
       console.log(err)
 
-      alert('Transaction failed')
+      if (err.shortMessage) {
+        alert(err.shortMessage)
+      } else {
+        alert('Delegation failed')
+      }
 
     }
 
   }
+
   async function createProposal() {
 
-  try {
+    try {
 
-    const calldata = '0x'
+      const calldata = encodeFunctionData({
+        abi: tokenABI,
+        functionName: 'approve',
+        args: [
+          VAULT_ADDRESS,
+          parseEther('1')
+        ],
+      })
 
-    const hash = await writeContractAsync({
-      address: GOVERNOR_ADDRESS,
-      abi: governorABI,
-      functionName: 'propose',
+      const hash = await writeContractAsync({
+        address: GOVERNOR_ADDRESS,
+        abi: governorABI,
+        functionName: 'propose',
 
-      args: [
-        [TOKEN_ADDRESS],
-        [0],
-        [calldata],
-        ['Frontend Proposal ' + Date.now()]
-      ],
+        args: [
+          [TOKEN_ADDRESS],
+          [0],
+          [calldata],
+          'Frontend Proposal ' + Date.now()
+        ],
+      })
 
-      gas: 500000n,
-      maxFeePerGas: parseEther('0.0000001'),
-      maxPriorityFeePerGas: parseEther('0.00000005'),
-    })
+      console.log(hash)
 
-    console.log('TX HASH:', hash)
+      alert('Proposal created')
 
-    alert('Proposal transaction sent')
+    } catch (err) {
 
-  } catch (err) {
+      console.log(err)
 
-    console.log(err)
+      if (err.shortMessage) {
+        alert(err.shortMessage)
+      } else {
+        alert('Proposal failed')
+      }
 
-    alert('Proposal failed')
-
-  }
-
-}
-async function vote(support) {
-
-  try {
-
-    await writeContractAsync({
-      address: GOVERNOR_ADDRESS,
-      abi: governorABI,
-      functionName: 'castVote',
-
-      args: [
-        BigInt(proposalId),
-        support
-      ],
-
-      gas: 300000n,
-      maxFeePerGas: parseEther('0.0000001'),
-      maxPriorityFeePerGas: parseEther('0.00000005'),
-    })
-
-    alert('Vote submitted')
-
-  } catch (err) {
-
-    console.log(err)
-
-    alert('Vote failed')
+    }
 
   }
 
-}async function checkProposalState() {
+  async function vote(support) {
 
-  try {
+    try {
 
-    const result = await publicClient.readContract({
-      address: GOVERNOR_ADDRESS,
-      abi: governorABI,
-      functionName: 'state',
-      args: [BigInt(proposalId)],
-    })
+      await writeContractAsync({
+        address: GOVERNOR_ADDRESS,
+        abi: governorABI,
+        functionName: 'castVote',
 
-    const states = [
-      'Pending',
-      'Active',
-      'Canceled',
-      'Defeated',
-      'Succeeded',
-      'Queued',
-      'Expired',
-      'Executed'
-    ]
+        args: [
+          BigInt(proposalId),
+          support
+        ],
+      })
 
-    setProposalState(states[Number(result)])
+      alert('Vote submitted')
 
-  } catch (err) {
+    } catch (err) {
 
-    console.log(err)
+      console.log(err)
+
+      if (err.shortMessage) {
+        alert(err.shortMessage)
+      } else {
+        alert('Vote failed')
+      }
+
+    }
 
   }
 
-}
+  async function checkProposalState() {
+
+    try {
+
+      const result = await publicClient.readContract({
+        address: GOVERNOR_ADDRESS,
+        abi: governorABI,
+        functionName: 'state',
+        args: [BigInt(proposalId)],
+      })
+
+      const states = [
+        'Pending',
+        'Active',
+        'Canceled',
+        'Defeated',
+        'Succeeded',
+        'Queued',
+        'Expired',
+        'Executed'
+      ]
+
+      setProposalState(states[Number(result)])
+
+    } catch (err) {
+
+      console.log(err)
+
+    }
+
+  }
 
   return (
 
-    <div className="min-h-screen bg-[#0b0b0f] text-white p-10">
+    <div className="app">
 
-      <h1 className="text-4xl font-bold text-center mb-10">
-        RWA Tokenization Platform
-      </h1>
+      <div className="hero">
 
-      <div className="flex justify-center mb-10">
+        <div className="navbar">
 
-        {
-          !isConnected ? (
+          <h1 className="logo">
+            RWA DAO
+          </h1>
 
-            <button
-              onClick={() => connect({ connector: injected() })}
-              className="bg-blue-600 px-6 py-3 rounded-xl"
-            >
-              Connect MetaMask
-            </button>
+          {
+            !isConnected ? (
 
-          ) : (
+              <button
+                onClick={() => connect({ connector: injected() })}
+                className="button connect-btn"
+              >
+                Connect Wallet
+              </button>
 
-            <button
-              onClick={() => disconnect()}
-              className="bg-red-600 px-6 py-3 rounded-xl"
-            >
-              Disconnect
-            </button>
+            ) : (
 
-          )
-        }
+              <button
+                onClick={() => disconnect()}
+                className="button disconnect-btn"
+              >
+                Disconnect
+              </button>
 
-      </div>
+            )
+          }
 
-      {
-        isConnected && (
+        </div>
 
-          <div className="max-w-xl mx-auto bg-[#16161f] p-6 rounded-2xl">
+        <div className="hero-grid">
 
-            <p className="mb-2">
-              Wallet Address
+          <div>
+
+            <p className="hero-subtitle">
+              Tokenize • Govern • Earn
             </p>
 
-            <p className="text-green-400 break-all mb-6">
-              {address}
-            </p>
+            <h1 className="hero-title">
+              The future
+              <br />
+              of RWA
+              <br />
+              governance
+            </h1>
 
-            <p>
-              Chain ID: {chainId}
+            <p className="hero-description">
+              A decentralized platform for tokenized real-world assets,
+              vault deposits, DAO governance, and onchain voting.
             </p>
-
-            <p className="mt-4">
-              Token Balance:
-            </p>
-
-            <p className="text-blue-400 mb-4">
-              {
-                balance
-                  ? formatEther(balance)
-                  : '0'
-              }
-            </p>
-
-            <p>
-              Voting Power:
-            </p>
-
-            <p className="text-yellow-400">
-              {
-                votes
-                  ? formatEther(votes)
-                  : '0'
-              }
-            </p>
-
-            {
-              chainId !== correctChain && (
-                <p className="mt-4 text-red-500 font-bold">
-                  Wrong network. Switch to Arbitrum Sepolia.
-                </p>
-              )
-            }
 
           </div>
 
-        )
-      }
+          <div className="wallet-card-wrapper">
 
-      {
-        isConnected && (
+            <div className="wallet-card">
 
-          <div className="max-w-xl mx-auto bg-[#16161f] p-6 rounded-2xl mt-10">
+              <div className="wallet-header">
 
-            <h2 className="text-2xl mb-6">
-              Vault Deposit
-            </h2>
+                <div>
+
+                  <p className="wallet-title">
+                    Connected Wallet
+                  </p>
+
+                  <p className="wallet-address">
+                    {
+                      address
+                        ? address.slice(0, 6) +
+                        '...' +
+                        address.slice(-4)
+                        : 'Not Connected'
+                    }
+                  </p>
+
+                </div>
+
+                <div className="network-badge">
+                  Base Sepolia
+                </div>
+
+              </div>
+
+              <div className="stats">
+
+                <div className="stat-card balance">
+
+                  <p className="stat-label">
+                    Token Balance
+                  </p>
+
+                  <h2 className="stat-value">
+                    {
+                      balance
+                        ? formatEther(balance)
+                        : '0'
+                    }
+                  </h2>
+
+                </div>
+
+                <div className="stat-card votes">
+
+                  <p className="stat-label">
+                    Voting Power
+                  </p>
+
+                  <h2 className="stat-value">
+                    {
+                      votes
+                        ? formatEther(votes)
+                        : '0'
+                    }
+                  </h2>
+
+                </div>
+
+                <div className="stat-card delegate">
+
+                  <p className="stat-label">
+                    Delegate Address
+                  </p>
+
+                  <p className="delegate-value">
+                    {
+                      delegates
+                        ? delegates.slice(0, 6) +
+                        '...' +
+                        delegates.slice(-4)
+                        : 'No Delegate'
+                    }
+                  </p>
+
+                  <input
+                    type="text"
+                    placeholder="Delegate address..."
+                    value={delegateAddress}
+                    onChange={(e) => setDelegateAddress(e.target.value)}
+                    className="input input-light"
+                    style={{ marginTop: '20px' }}
+                  />
+
+                  <button
+                    onClick={delegateVotes}
+                    className="button check-btn"
+                  >
+                    Delegate Votes
+                  </button>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <div className="section">
+
+        <div className="section-card deposit-card">
+
+          <h2 className="section-title">
+            Vault Deposit
+          </h2>
+
+          <div className="deposit-row">
 
             <input
               type="text"
-              placeholder="Amount"
+              placeholder="Enter amount..."
               value={depositAmount}
               onChange={(e) => setDepositAmount(e.target.value)}
-              className="w-full p-3 rounded-xl bg-[#0b0b0f] border border-gray-700 mb-4"
+              className="input"
             />
 
             <button
               onClick={handleDeposit}
-              className="bg-green-600 px-6 py-3 rounded-xl"
+              className="button deposit-btn"
             >
               Deposit
             </button>
 
           </div>
 
-        )
-      }
-{
-  isConnected && (
-
-    <div className="max-w-xl mx-auto bg-[#16161f] p-6 rounded-2xl mt-10">
-
-      <h2 className="text-2xl mb-6">
-        Governance
-      </h2>
-
-      <button
-        onClick={createProposal}
-        className="bg-purple-600 px-6 py-3 rounded-xl mb-6"
-      >
-        Create Proposal
-      </button>
-
-      <input
-        type="text"
-        placeholder="Proposal ID"
-        value={proposalId}
-        onChange={(e) => setProposalId(e.target.value)}
-        className="w-full p-3 rounded-xl bg-[#0b0b0f] border border-gray-700 mb-4"
-      />
-
-      <div className="flex gap-4 mb-4">
-
-        <button
-          onClick={() => vote(1)}
-          className="bg-green-600 px-4 py-2 rounded-xl"
-        >
-          FOR
-        </button>
-
-        <button
-          onClick={() => vote(0)}
-          className="bg-red-600 px-4 py-2 rounded-xl"
-        >
-          AGAINST
-        </button>
+        </div>
 
       </div>
 
-      <button
-        onClick={checkProposalState}
-        className="bg-blue-600 px-6 py-3 rounded-xl"
-      >
-        Check Proposal State
-      </button>
+      <div className="section">
 
-      <p className="mt-4 text-yellow-400">
-        {proposalState}
-      </p>
+        <div className="section-card governance-card">
 
-    </div>
+          <div className="gov-header">
 
-  )
-}
+            <div>
+
+              <p className="hero-subtitle">
+                DAO Governance
+              </p>
+
+              <h2 className="section-title">
+                Governance Portal
+              </h2>
+
+            </div>
+
+            <button
+              onClick={createProposal}
+              className="button proposal-btn"
+            >
+              Create Proposal
+            </button>
+
+          </div>
+
+          <div className="gov-grid">
+
+            <div className="white-card">
+
+              <p className="stat-label">
+                Proposal ID
+              </p>
+
+              <input
+                type="text"
+                placeholder="Paste proposal ID..."
+                value={proposalId}
+                onChange={(e) => setProposalId(e.target.value)}
+                className="input input-light"
+              />
+
+              <button
+                onClick={checkProposalState}
+                className="button check-btn"
+              >
+                Check Proposal State
+              </button>
+
+              <div className="state-box">
+
+                <p className="stat-label">
+                  Current State
+                </p>
+
+                <h3 className="state-value">
+                  {proposalState || '—'}
+                </h3>
+
+              </div>
+
+            </div>
+
+            <div className="white-card">
+
+              <p className="stat-label">
+                Cast your governance vote
+              </p>
+
+              <div className="vote-buttons">
+
+                <button
+                  onClick={() => vote(1)}
+                  className="button vote-for"
+                >
+                  Vote FOR
+                </button>
+
+                <button
+                  onClick={() => vote(0)}
+                  className="button vote-against"
+                >
+                  Vote AGAINST
+                </button>
+
+              </div>
+
+              <div className="network-box">
+
+                <p className="stat-label">
+                  Network
+                </p>
+
+                <h3 className="network-value">
+                  {
+                    chainId === correctChain
+                      ? 'Base Sepolia'
+                      : 'Wrong Network'
+                  }
+                </h3>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
     </div>
 
   )

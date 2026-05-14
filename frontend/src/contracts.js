@@ -1,11 +1,11 @@
 export const TOKEN_ADDRESS =
-  "0xbce3667bdbF65cD70581a6cFb0734a93e765648d"
+  "0x9ad1de2a6b9d13cd1622ca473f5ffa1723df67da"
 
 export const GOVERNOR_ADDRESS =
-  "0x8aEBC0bCa2cb7B986C1aAF56453f1312D99FaD4F"
+  "0x9104016f4393b80f86357db0e27fe1fd49642aa5"
 
 export const VAULT_ADDRESS =
-  "0x4fBE1EE55534621cF14978c9983A4c19177CF690"
+  "0x359289a6f7800ccfdbfa3ca97cb047263e009132"
 
 export const tokenABI = [
 
@@ -72,7 +72,39 @@ export const tokenABI = [
     ],
     stateMutability: "nonpayable",
     type: "function"
-  }
+  },
+  {
+  "inputs": [
+    {
+      "internalType": "address",
+      "name": "delegatee",
+      "type": "address"
+    }
+  ],
+  "name": "delegate",
+  "outputs": [],
+  "stateMutability": "nonpayable",
+  "type": "function"
+},
+{
+  "inputs": [
+    {
+      "internalType": "address",
+      "name": "account",
+      "type": "address"
+    }
+  ],
+  "name": "delegates",
+  "outputs": [
+    {
+      "internalType": "address",
+      "name": "",
+      "type": "address"
+    }
+  ],
+  "stateMutability": "view",
+  "type": "function"
+}
 
 ]
 

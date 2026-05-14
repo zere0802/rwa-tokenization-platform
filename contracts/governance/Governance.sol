@@ -24,9 +24,9 @@ contract Governance is
     )
         Governor("RWA Governance")
         GovernorSettings(
-            7200,
-            50400,
-            1e18
+            1,
+            20,
+            0
         )
         GovernorVotes(_token)
         GovernorVotesQuorumFraction(4)
