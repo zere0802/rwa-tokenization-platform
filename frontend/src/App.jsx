@@ -46,6 +46,8 @@ function App() {
   const chainId = useChainId()
 
   const correctChain = 84532
+  const wrongNetwork =
+    chainId !== 84532
 
   const [depositAmount, setDepositAmount] = useState('')
   const [proposalId, setProposalId] = useState('')
@@ -54,6 +56,12 @@ function App() {
   const [delegateAddress, setDelegateAddress] = useState('')
   const [subgraphProposals, setSubgraphProposals] = useState([])
   const [subgraphVotes, setSubgraphVotes] = useState([])
+
+  const [txMessage, setTxMessage] =
+    useState('')
+
+  const [txError, setTxError] =
+    useState(false)
 
   const {
     writeContractAsync
@@ -126,14 +134,23 @@ function App() {
 
       console.log(receipt)
 
-      alert('Deposit successful')
+      setTxError(false)
+
+setTxMessage(
+  'Deposit successful'
+)
 
       refetchBalance()
       refetchVotes()
 
     } catch (err) {
 
-      console.log(err)
+      setTxError(true)
+
+setTxMessage(
+  err.shortMessage ||
+  'Transaction failed'
+)
 
       if (
         err.message?.includes(
@@ -141,13 +158,21 @@ function App() {
         )
       ) {
 
-        alert('Transaction rejected')
+        setTxError(true)
+
+setTxMessage(
+  err.shortMessage ||
+  'Transaction rejected by user'
+)
 
       } else {
 
-        alert(
-          'Deposit submitted. Check BaseScan.'
-        )
+        setTxError(true)
+
+setTxMessage(
+  err.shortMessage ||
+  'Transaction failed or reverted'
+)
 
       }
 
@@ -157,173 +182,160 @@ function App() {
 
   async function approveVault() {
 
-    try {
+  try {
 
-      const hash = await writeContractAsync({
-        address: TOKEN_ADDRESS,
-        abi: tokenABI,
-        functionName: 'approve',
-        args: [
-          VAULT_ADDRESS,
-          parseEther('1000000')
-        ],
-      })
+    const hash = await writeContractAsync({
+      address: TOKEN_ADDRESS,
+      abi: tokenABI,
+      functionName: 'approve',
+      args: [
+        VAULT_ADDRESS,
+        parseEther('1000000')
+      ],
+    })
 
-      await publicClient.waitForTransactionReceipt({
-        hash
-      })
+    await publicClient.waitForTransactionReceipt({
+      hash
+    })
 
-      alert('Vault approved')
+    setTxError(false)
 
-    } catch (err) {
+    setTxMessage(
+      'Vault approved successfully'
+    )
 
-      console.log(err)
+  } catch (err) {
 
-      if (err.shortMessage) {
-        alert(err.shortMessage)
-      } else {
-        alert('Approve failed')
-      }
+    setTxError(true)
 
-    }
+    setTxMessage(
+      err.shortMessage ||
+      'Approve transaction failed'
+    )
 
   }
+
+}
 
   async function delegateVotes() {
 
-    try {
+  try {
 
-      const hash = await writeContractAsync({
-        address: TOKEN_ADDRESS,
-        abi: tokenABI,
-        functionName: 'delegate',
-        args: [delegateAddress],
-      })
+    const hash = await writeContractAsync({
+      address: TOKEN_ADDRESS,
+      abi: tokenABI,
+      functionName: 'delegate',
+      args: [delegateAddress],
+    })
 
-      await publicClient.waitForTransactionReceipt({
-        hash
-      })
+    await publicClient.waitForTransactionReceipt({
+      hash
+    })
 
-      await refetchVotes()
-      await refetchDelegates()
+    await refetchVotes()
+    await refetchDelegates()
 
-      alert('Delegation successful')
+    setTxError(false)
 
-    } catch (err) {
+    setTxMessage(
+      'Votes delegated successfully'
+    )
 
-      console.log(err)
+    window.location.reload()
 
-      if (err.shortMessage) {
-        alert(err.shortMessage)
-      } else {
-        alert('Delegation failed')
-      }
+  } catch (err) {
 
-    }
+    setTxError(true)
 
-
-    try {
-
-      await writeContractAsync({
-        address: TOKEN_ADDRESS,
-        abi: tokenABI,
-        functionName: 'delegate',
-        args: [delegateAddress],
-      })
-
-      await refetchVotes()
-      await refetchDelegates()
-
-      alert('Delegation successful')
-
-    } catch (err) {
-
-      console.log(err)
-
-      if (err.shortMessage) {
-        alert(err.shortMessage)
-      } else {
-        alert('Delegation failed')
-      }
-
-    }
+    setTxMessage(
+      err.shortMessage ||
+      'Delegation failed'
+    )
 
   }
+
+}
 
   async function createProposal() {
 
-    try {
+  try {
 
-      const calldata = encodeFunctionData({
-        abi: tokenABI,
-        functionName: 'approve',
-        args: [
-          VAULT_ADDRESS,
-          parseEther('1')
-        ],
-      })
+    const calldata = encodeFunctionData({
+      abi: tokenABI,
+      functionName: 'approve',
+      args: [
+        VAULT_ADDRESS,
+        parseEther('1')
+      ],
+    })
 
-      const hash = await writeContractAsync({
-        address: GOVERNOR_ADDRESS,
-        abi: governorABI,
-        functionName: 'propose',
+    const hash = await writeContractAsync({
+      address: GOVERNOR_ADDRESS,
+      abi: governorABI,
+      functionName: 'propose',
 
-        args: [
-          [TOKEN_ADDRESS],
-          [0],
-          [calldata],
-          proposalTitle
-        ],
-      })
+      args: [
+        [TOKEN_ADDRESS],
+        [0],
+        [calldata],
+        proposalTitle
+      ],
+    })
 
-      console.log(hash)
+    setTxError(false)
 
-      alert('Proposal created')
+    setTxMessage(
+      'Proposal created successfully'
+    )
 
-    } catch (err) {
+  } catch (err) {
 
-      console.log(err)
+    setTxError(true)
 
-      if (err.shortMessage) {
-        alert(err.shortMessage)
-      } else {
-        alert('Proposal failed')
-      }
-
-    }
+    setTxMessage(
+      err.shortMessage ||
+      'Proposal creation failed'
+    )
 
   }
+
+}
 
   async function vote(support) {
 
-    try {
+  try {
 
-      await writeContractAsync({
-        address: GOVERNOR_ADDRESS,
-        abi: governorABI,
-        functionName: 'castVote',
+    await writeContractAsync({
+      address: GOVERNOR_ADDRESS,
+      abi: governorABI,
+      functionName: 'castVote',
 
-        args: [
-          BigInt(proposalId),
-          support
-        ],
-      })
+      args: [
+        BigInt(proposalId),
+        support
+      ],
+    })
 
-      alert('Vote submitted')
+    setTxError(false)
 
-    } catch (err) {
+    setTxMessage(
+      support === 1
+        ? 'Vote FOR submitted successfully'
+        : 'Vote AGAINST submitted successfully'
+    )
 
-      console.log(err)
+  } catch (err) {
 
-      if (err.shortMessage) {
-        alert(err.shortMessage)
-      } else {
-        alert('Vote failed')
-      }
+    setTxError(true)
 
-    }
+    setTxMessage(
+      err.shortMessage ||
+      'Vote transaction failed'
+    )
 
   }
+
+}
 
   async function checkProposalState() {
 
@@ -351,7 +363,12 @@ function App() {
 
     } catch (err) {
 
-      console.log(err)
+      setTxError(true)
+
+setTxMessage(
+  err.shortMessage ||
+  'Transaction failed'
+)
 
     }
 
@@ -414,7 +431,12 @@ function App() {
 
       } catch (err) {
 
-        console.log(err)
+        setTxError(true)
+
+setTxMessage(
+  err.shortMessage ||
+  'Transaction failed'
+)
 
       }
 
@@ -430,6 +452,115 @@ function App() {
 
       <div className="hero">
 
+        {
+          wrongNetwork && (
+
+            <div
+              style={{
+                background: '#ffdddd',
+                color: '#7a1c1c',
+                padding: '16px',
+                borderRadius: '14px',
+                marginBottom: '24px',
+                fontWeight: '600',
+                maxWidth: '1200px',
+                marginInline: 'auto'
+              }}
+            >
+              Wrong network detected.
+              Please switch to Base Sepolia.
+            </div>
+
+          )
+        }
+{
+  txMessage && (
+
+    <div
+      style={{
+        position: 'fixed',
+        top: '30px',
+        right: '30px',
+        zIndex: 9999,
+
+        background: txError
+          ? 'linear-gradient(135deg, #ffe1e1, #ffd3d3)'
+          : 'linear-gradient(135deg, #dcffe0, #c8ffd0)',
+
+        color: txError
+          ? '#7a1c1c'
+          : '#245c2a',
+
+        padding: '20px',
+        borderRadius: '22px',
+
+        fontWeight: '600',
+
+        border: txError
+          ? '2px solid #ffb7b7'
+          : '2px solid #bdf5c4',
+
+        boxShadow:
+          '0 15px 40px rgba(0,0,0,0.15)',
+
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+
+        gap: '20px',
+
+        minWidth: '360px',
+        maxWidth: '420px',
+
+        animation: 'slideIn 0.3s ease'
+      }}
+    >
+
+      <div>
+
+        <div
+          style={{
+            fontSize: '20px',
+            marginBottom: '8px',
+            fontWeight: '700'
+          }}
+        >
+          {
+            txError
+              ? 'Transaction Failed'
+              : 'Transaction Successful'
+          }
+        </div>
+
+        <div
+          style={{
+            fontSize: '14px',
+            opacity: 0.9
+          }}
+        >
+          {txMessage}
+        </div>
+
+      </div>
+
+      <button
+        onClick={() => setTxMessage('')}
+        style={{
+          border: 'none',
+          background: 'transparent',
+          fontSize: '24px',
+          cursor: 'pointer',
+          color: 'inherit',
+          fontWeight: '700'
+        }}
+      >
+        ×
+      </button>
+
+    </div>
+
+  )
+}
         <div className="navbar">
 
           <h1 className="logo">
@@ -613,6 +744,10 @@ function App() {
             <button
               onClick={approveVault}
               className="button deposit-btn"
+              style={{
+                minWidth: '220px',
+                whiteSpace: 'nowrap'
+              }}
             >
               Approve Vault
             </button>
@@ -694,7 +829,8 @@ function App() {
               {
                 subgraphProposals.length === 0 ? (
 
-                  <p>No indexed proposals yet</p>
+                  <p>No governance proposals indexed yet.
+                    Create your first DAO proposal.</p>
 
                 ) : (
 
@@ -731,7 +867,20 @@ function App() {
                       >
                         {proposal.description}
                       </p>
-
+                      <a
+                        href={`https://sepolia.basescan.org/address/${GOVERNOR_ADDRESS}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                          color: '#5d6d50',
+                          fontWeight: '600',
+                          textDecoration: 'none',
+                          marginTop: '12px',
+                          display: 'inline-block'
+                        }}
+                      >
+                        View Governance Contract →
+                      </a>
                       <p
                         style={{
                           fontSize: '12px',
@@ -801,7 +950,7 @@ function App() {
                           {
                             proposal
                               ? proposal.description
-                              : 'Governance Vote'
+                              : 'Vote Activity'
                           }
                         </p>
 
@@ -812,13 +961,12 @@ function App() {
                             color: '#55624f'
                           }}
                         >
-                          Support:
-                          {
-                            Number(vote.support) === 1
-                              ? ' FOR'
-                              : Number(vote.support) === 0
-                                ? ' AGAINST'
-                                : ' ABSTAIN'
+                          Support: {
+                            Number(vote.support) === 0
+                              ? 'AGAINST'
+                              : Number(vote.support) === 1
+                                ? 'FOR'
+                                : 'ABSTAIN'
                           }
                         </p>
 
