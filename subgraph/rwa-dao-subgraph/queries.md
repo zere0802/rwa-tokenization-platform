@@ -14,8 +14,7 @@
 }
 ```
 
----
-
+ 
 ## 2. Get All Votes
 
 ```graphql
@@ -30,8 +29,7 @@
 }
 ```
 
----
-
+ 
 ## 3. Get Proposal By ID
 
 ```graphql
@@ -44,8 +42,7 @@
 }
 ```
 
----
-
+ 
 ## 4. Get Votes For Proposal
 
 ```graphql
@@ -58,8 +55,7 @@
 }
 ```
 
----
-
+ 
 ## 5. Get Recent Governance Activity
 
 ```graphql

@@ -1,12 +1,10 @@
-````md
 # RWA DAO Tokenization Platform
 
 A full-stack decentralized protocol for real-world asset (RWA) tokenization, governance, and yield vault management built on Base Sepolia.
 
 This project was developed as the final capstone project for Blockchain Technologies 2.
 
----
-
+ 
 # Overview
 
 The platform combines:
@@ -28,8 +26,7 @@ Users can:
 - Deposit tokens into the ERC4626 vault
 - View indexed governance activity from The Graph
 
----
-
+ 
 # Architecture
 
 ## Smart Contracts
@@ -60,8 +57,7 @@ Secures governance execution through delayed proposal execution.
 
 ERC4626 tokenized vault for RWA deposits and yield accounting.
 
----
-
+ 
 # Tech Stack
 
 ## Smart Contracts
@@ -85,8 +81,7 @@ ERC4626 tokenized vault for RWA deposits and yield accounting.
 - Base Sepolia
 - BaseScan
 
----
-
+ 
 # Frontend Features
 
 - MetaMask wallet connection
@@ -102,8 +97,7 @@ ERC4626 tokenized vault for RWA deposits and yield accounting.
 - Indexed vote activity
 - Transaction notifications and error handling
 
----
-
+ 
 # Governance Flow
 
 1. User connects wallet
@@ -114,8 +108,7 @@ ERC4626 tokenized vault for RWA deposits and yield accounting.
 6. Proposal state is tracked onchain
 7. Governance events are indexed by The Graph
 
----
-
+ 
 # ERC4626 Vault Flow
 
 1. User approves vault allowance
@@ -123,8 +116,7 @@ ERC4626 tokenized vault for RWA deposits and yield accounting.
 3. Vault receives assets
 4. Deposit activity becomes visible onchain
 
----
-
+ 
 # The Graph Integration
 
 The protocol uses a custom subgraph for indexing governance and vault events.
@@ -136,13 +128,12 @@ The protocol uses a custom subgraph for indexing governance and vault events.
 - Deposit
 - DelegateChange
 
----
-
+ 
 # GraphQL Queries
 
 ## Get Proposals
 
-```graphql
+graphql
 {
   proposals(first: 5) {
     proposalId
@@ -150,11 +141,11 @@ The protocol uses a custom subgraph for indexing governance and vault events.
     proposer
   }
 }
-````
+
 
 ## Get Votes
 
-```graphql
+graphql
 {
   votes(first: 5) {
     voter
@@ -163,11 +154,11 @@ The protocol uses a custom subgraph for indexing governance and vault events.
     weight
   }
 }
-```
+
 
 ## Get Deposits
 
-```graphql
+graphql
 {
   deposits(first: 5) {
     owner
@@ -175,11 +166,11 @@ The protocol uses a custom subgraph for indexing governance and vault events.
     shares
   }
 }
-```
+
 
 ## Get Delegate Changes
 
-```graphql
+graphql
 {
   delegateChanges(first: 5) {
     delegator
@@ -187,11 +178,11 @@ The protocol uses a custom subgraph for indexing governance and vault events.
     toDelegate
   }
 }
-```
+
 
 ## Get Proposal Activity
 
-```graphql
+graphql
 {
   proposals(first: 5) {
     proposalId
@@ -203,9 +194,9 @@ The protocol uses a custom subgraph for indexing governance and vault events.
     support
   }
 }
-```
 
----
+
+
 
 # Verified Contracts
 
@@ -221,8 +212,7 @@ The protocol uses a custom subgraph for indexing governance and vault events.
 
 [https://sepolia.basescan.org/address/0x94de1B8d49a036ddD287bC5eEA5879C9924D6e45](https://sepolia.basescan.org/address/0x94de1B8d49a036ddD287bC5eEA5879C9924D6e45)
 
----
-
+ 
 # Subgraph
 
 ## Subgraph Studio
@@ -233,8 +223,7 @@ The protocol uses a custom subgraph for indexing governance and vault events.
 
 [https://api.studio.thegraph.com/query/1753362/rwa-dao-subgraph/v0.0.2](https://api.studio.thegraph.com/query/1753362/rwa-dao-subgraph/v0.0.2)
 
----
-
+ 
 # Layer 2 Deployment
 
 The protocol is deployed on Base Sepolia to reduce gas costs and improve governance usability.
@@ -249,8 +238,7 @@ The protocol is deployed on Base Sepolia to reduce gas costs and improve governa
 | Vault Deposit     | Medium Cost      | Cheap        |
 | Delegation        | Medium Cost      | Cheap        |
 
----
-
+ 
 # Running Locally
 
 ## Install Dependencies
@@ -280,8 +268,7 @@ npm install
 npm run dev
 ```
 
----
-
+ 
 # Deployment
 
 ## Deploy Contracts
@@ -298,8 +285,7 @@ forge script script/DeployGovernance.s.sol \
 graph deploy rwa-dao-subgraph
 ```
 
----
-
+ 
 # Screenshots
 
 ## Governance Dashboard
@@ -318,8 +304,7 @@ graph deploy rwa-dao-subgraph
 
 ![Vault Deposit](images/deposit.png)
 
----
-
+ 
 # Security
 
 The protocol uses:
@@ -333,8 +318,7 @@ The protocol uses:
 * Reentrancy-safe architecture
 * Safe transaction handling
 
----
-
+ 
 # Team Contributions
 
 ## Smart Contracts
@@ -354,11 +338,7 @@ The protocol uses:
 * Contract verification
 * Governance activity feed
 
----
-
+ 
 # License
 
 MIT
-
-```
-```
