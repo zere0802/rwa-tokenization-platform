@@ -49,9 +49,11 @@ function App() {
 
   const [depositAmount, setDepositAmount] = useState('')
   const [proposalId, setProposalId] = useState('')
+  const [proposalTitle, setProposalTitle] = useState('')
   const [proposalState, setProposalState] = useState('')
   const [delegateAddress, setDelegateAddress] = useState('')
   const [subgraphProposals, setSubgraphProposals] = useState([])
+  const [subgraphVotes, setSubgraphVotes] = useState([])
 
   const {
     writeContractAsync
@@ -96,38 +98,82 @@ function App() {
     }
   })
 
-  async function handleDeposit() {
+  async function depositToVault() {
 
     try {
 
-      const amount = parseEther(depositAmount)
+      const hash = await writeContractAsync({
 
-      const approveHash = await writeContractAsync({
+        address: VAULT_ADDRESS,
+
+        abi: vaultABI,
+
+        functionName: 'deposit',
+
+        args: [
+          parseEther(depositAmount),
+          address
+        ],
+
+        gas: 500000n
+
+      })
+
+      const receipt =
+        await publicClient.waitForTransactionReceipt({
+          hash
+        })
+
+      console.log(receipt)
+
+      alert('Deposit successful')
+
+      refetchBalance()
+      refetchVotes()
+
+    } catch (err) {
+
+      console.log(err)
+
+      if (
+        err.message?.includes(
+          'User rejected'
+        )
+      ) {
+
+        alert('Transaction rejected')
+
+      } else {
+
+        alert(
+          'Deposit submitted. Check BaseScan.'
+        )
+
+      }
+
+    }
+
+  }
+
+  async function approveVault() {
+
+    try {
+
+      const hash = await writeContractAsync({
         address: TOKEN_ADDRESS,
         abi: tokenABI,
         functionName: 'approve',
-        args: [VAULT_ADDRESS, amount],
+        args: [
+          VAULT_ADDRESS,
+          parseEther('1000000')
+        ],
       })
 
       await publicClient.waitForTransactionReceipt({
-        hash: approveHash
+        hash
       })
 
-      const depositHash = await writeContractAsync({
-        address: VAULT_ADDRESS,
-        abi: vaultABI,
-        functionName: 'deposit',
-        args: [amount, address],
-      })
-
-      await publicClient.waitForTransactionReceipt({
-        hash: depositHash
-      })
-
-      await refetchBalance()
-      await refetchVotes()
-
-      alert('Deposit successful')
+      alert('Vault approved')
 
     } catch (err) {
 
@@ -136,7 +182,7 @@ function App() {
       if (err.shortMessage) {
         alert(err.shortMessage)
       } else {
-        alert('Transaction failed')
+        alert('Approve failed')
       }
 
     }
@@ -226,7 +272,7 @@ function App() {
           [TOKEN_ADDRESS],
           [0],
           [calldata],
-          'Frontend Proposal ' + Date.now()
+          proposalTitle
         ],
       })
 
@@ -311,6 +357,7 @@ function App() {
 
 
   }
+
   useEffect(() => {
 
     async function fetchSubgraphData() {
@@ -328,21 +375,42 @@ function App() {
 
             body: JSON.stringify({
               query: `
-              {
-                proposals(first: 5, orderBy: timestamp, orderDirection: desc) {
-                  proposalId
-                  description
-                  proposer
-                }
+            {
+              proposals(
+                first: 5,
+                orderBy: timestamp,
+                orderDirection: desc
+              ) {
+                proposalId
+                description
+                proposer
               }
-            `
+
+              votes(
+                first: 10,
+                orderBy: timestamp,
+                orderDirection: desc
+              ) {
+                voter
+                proposalId
+                support
+                weight
+              }
+            }
+          `
             })
           }
         )
 
         const result = await response.json()
 
-        setSubgraphProposals(result.data.proposals)
+        setSubgraphProposals(
+          result.data.proposals
+        )
+
+        setSubgraphVotes(
+          result.data.votes
+        )
 
       } catch (err) {
 
@@ -355,6 +423,7 @@ function App() {
     fetchSubgraphData()
 
   }, [])
+
   return (
 
     <div className="app">
@@ -498,7 +567,9 @@ function App() {
                     type="text"
                     placeholder="Delegate address..."
                     value={delegateAddress}
-                    onChange={(e) => setDelegateAddress(e.target.value)}
+                    onChange={(e) =>
+                      setDelegateAddress(e.target.value)
+                    }
                     className="input input-light"
                     style={{ marginTop: '20px' }}
                   />
@@ -539,9 +610,14 @@ function App() {
               onChange={(e) => setDepositAmount(e.target.value)}
               className="input"
             />
-
             <button
-              onClick={handleDeposit}
+              onClick={approveVault}
+              className="button deposit-btn"
+            >
+              Approve Vault
+            </button>
+            <button
+              onClick={depositToVault}
               className="button deposit-btn"
             >
               Deposit
@@ -570,6 +646,19 @@ function App() {
               </h2>
 
             </div>
+            <input
+              type="text"
+              placeholder="Proposal title..."
+              value={proposalTitle}
+              onChange={(e) =>
+                setProposalTitle(e.target.value)
+              }
+              className="input input-light"
+              style={{
+                marginRight: '16px',
+                maxWidth: '260px'
+              }}
+            />
 
             <button
               onClick={createProposal}
@@ -580,11 +669,23 @@ function App() {
 
           </div>
 
-          <div className="gov-grid">
+          <div
+            className="gov-grid"
+            style={{
+              display: 'grid',
+              gridTemplateColumns:
+                'repeat(auto-fit, minmax(320px, 1fr))',
+              gap: '24px'
+            }}
+          >
             <div
-  className="white-card"
-  style={{ color: '#2f3b2f' }}
->
+              className="white-card"
+              style={{
+                color: '#2f3b2f',
+                overflowWrap: 'break-word',
+                wordBreak: 'break-word'
+              }}
+            >
 
               <p className="stat-label">
                 Indexed Governance Proposals
@@ -612,10 +713,14 @@ function App() {
                         style={{
                           fontWeight: '700',
                           marginBottom: '10px'
-                          
+
                         }}
                       >
-                        Proposal #{proposal.proposalId}
+                        Proposal #
+                        {
+                          proposal.proposalId.slice(0, 12)
+                        }
+                        ...
                       </p>
 
                       <p
@@ -633,7 +738,11 @@ function App() {
                           opacity: 0.7
                         }}
                       >
-                        {proposal.proposer}
+                        {
+                          proposal.proposer.slice(0, 6) +
+                          '...' +
+                          proposal.proposer.slice(-4)
+                        }
                       </p>
 
                     </div>
@@ -644,8 +753,118 @@ function App() {
               }
 
             </div>
+            <div
+              className="white-card"
+              style={{
+                overflowWrap: 'break-word',
+                wordBreak: 'break-word'
+              }}
+            >
 
-            <div className="white-card">
+              <p className="stat-label">
+                Recent Governance Votes
+              </p>
+
+              {
+                subgraphVotes.length === 0 ? (
+
+                  <p>No votes indexed yet</p>
+
+                ) : (
+
+                  subgraphVotes.map((vote, index) => {
+
+                    const proposal =
+                      subgraphProposals.find(
+                        (p) =>
+                          p.proposalId === vote.proposalId
+                      )
+
+                    return (
+
+                      <div
+                        key={index}
+                        style={{
+                          marginBottom: '20px',
+                          paddingBottom: '20px',
+                          borderBottom: '1px solid #d6d3c9'
+                        }}
+                      >
+
+                        <p
+                          style={{
+                            fontWeight: '700',
+                            marginBottom: '10px',
+                            color: '#2f3b2f'
+                          }}
+                        >
+                          {
+                            proposal
+                              ? proposal.description
+                              : 'Governance Vote'
+                          }
+                        </p>
+
+                        <p
+                          style={{
+                            fontSize: '14px',
+                            marginBottom: '10px',
+                            color: '#55624f'
+                          }}
+                        >
+                          Support:
+                          {
+                            Number(vote.support) === 1
+                              ? ' FOR'
+                              : Number(vote.support) === 0
+                                ? ' AGAINST'
+                                : ' ABSTAIN'
+                          }
+                        </p>
+
+                        <p
+                          style={{
+                            fontSize: '14px',
+                            marginBottom: '10px',
+                            color: '#55624f'
+                          }}
+                        >
+                          Weight:
+                          {
+                            formatEther(vote.weight)
+                          }
+                        </p>
+
+                        <p
+                          style={{
+                            fontSize: '12px',
+                            opacity: 0.7,
+                            color: '#6b7466'
+                          }}
+                        >
+                          {
+                            vote.voter.slice(0, 6) +
+                            '...' +
+                            vote.voter.slice(-4)
+                          }
+                        </p>
+
+                      </div>
+
+                    )
+
+                  })
+                )
+              }
+
+            </div>
+            <div
+              className="white-card"
+              style={{
+                overflowWrap: 'break-word',
+                wordBreak: 'break-word'
+              }}
+            >
 
               <p className="stat-label">
                 Proposal ID
@@ -680,7 +899,13 @@ function App() {
 
             </div>
 
-            <div className="white-card">
+            <div
+              className="white-card"
+              style={{
+                overflowWrap: 'break-word',
+                wordBreak: 'break-word'
+              }}
+            >
 
               <p className="stat-label">
                 Cast your governance vote
