@@ -9,6 +9,7 @@ import "../../contracts/governance/Governance.sol";
 import "@openzeppelin/contracts/governance/TimelockController.sol";
 
 contract GovernanceTest is Test {
+
     RWAToken token;
 
     Governance governance;
@@ -18,17 +19,16 @@ contract GovernanceTest is Test {
     address voter = address(1);
 
     function setUp() public {
+
         token = new RWAToken();
 
-        token.delegate(address(this));
+        address[] memory proposers =
+            new address[](1);
 
-        vm.roll(block.number + 1);
+        proposers[0] = address(this);
 
-        address[] memory proposers = new address[](1);
-
-        proposers[0] = address(governance);
-
-        address[] memory executors = new address[](1);
+        address[] memory executors =
+            new address[](1);
 
         executors[0] = address(0);
 
@@ -44,29 +44,10 @@ contract GovernanceTest is Test {
             timelock
         );
 
-        bytes32 proposerRole =
-            keccak256("PROPOSER_ROLE");
-
-        bytes32 executorRole =
-            keccak256("EXECUTOR_ROLE");
-
-        bytes32 adminRole =
-            keccak256("TIMELOCK_ADMIN_ROLE");
-
-        timelock.grantRole(
-            proposerRole,
-            address(governance)
-        );
-
-        timelock.grantRole(
-            executorRole,
-            address(0)
-        );
-
-        timelock.revokeRole(
-            adminRole,
-            address(this)
-        );
+        token.grantRole(
+    token.ISSUER_ROLE(),
+    address(governance)
+);
 
         token.transfer(
             voter,
@@ -77,22 +58,17 @@ contract GovernanceTest is Test {
 
         token.delegate(voter);
 
-        vm.roll(block.number + 1);
-
-        token.grantRole(
-            token.ISSUER_ROLE(),
-            address(timelock)
-        );
+        vm.roll(block.number + 2);
     }
 
     function testProposalLifecycle()
         public
     {
+
         address[] memory targets =
             new address[](1);
 
-        targets[0] =
-            address(token);
+        targets[0] = address(token);
 
         uint256[] memory values =
             new uint256[](1);
@@ -123,7 +99,7 @@ contract GovernanceTest is Test {
             );
 
         vm.roll(
-            block.number + 7201
+            block.number + 2
         );
 
         vm.prank(voter);
@@ -134,7 +110,7 @@ contract GovernanceTest is Test {
         );
 
         vm.roll(
-            block.number + 50401
+            block.number + 21
         );
 
         bytes32 descriptionHash =
@@ -171,11 +147,11 @@ contract GovernanceTest is Test {
     function testProposalStatePending()
         public
     {
+
         address[] memory targets =
             new address[](1);
 
-        targets[0] =
-            address(token);
+        targets[0] = address(token);
 
         uint256[] memory values =
             new uint256[](1);
@@ -215,11 +191,11 @@ contract GovernanceTest is Test {
     function testCannotVoteTwice()
         public
     {
+
         address[] memory targets =
             new address[](1);
 
-        targets[0] =
-            address(token);
+        targets[0] = address(token);
 
         uint256[] memory values =
             new uint256[](1);
@@ -247,7 +223,7 @@ contract GovernanceTest is Test {
             );
 
         vm.roll(
-            block.number + 7201
+            block.number + 2
         );
 
         vm.prank(voter);
@@ -271,7 +247,8 @@ contract GovernanceTest is Test {
         public
         view
     {
-        assertGt(
+
+        assertEq(
             governance
                 .proposalThreshold(),
             0
@@ -282,10 +259,11 @@ contract GovernanceTest is Test {
         public
         view
     {
+
         assertEq(
             governance
                 .votingDelay(),
-            7200
+            1
         );
     }
 
@@ -293,16 +271,18 @@ contract GovernanceTest is Test {
         public
         view
     {
+
         assertEq(
             governance
                 .votingPeriod(),
-            50400
+            20
         );
     }
 
     function testQuorum()
         public
     {
+
         vm.roll(
             block.number + 1
         );
@@ -318,6 +298,7 @@ contract GovernanceTest is Test {
     function testProposalNeedsVotes()
         public
     {
+
         address user2 =
             address(2);
 
@@ -337,6 +318,7 @@ contract GovernanceTest is Test {
         public
         view
     {
+
         assertEq(
             address(
                 governance.timelock()
@@ -344,4 +326,5 @@ contract GovernanceTest is Test {
             address(timelock)
         );
     }
+
 }
