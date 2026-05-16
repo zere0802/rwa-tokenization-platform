@@ -1,5 +1,5 @@
 import './App.css'
-
+import { useState, useEffect } from 'react'
 import {
   useAccount,
   useConnect,
@@ -18,8 +18,6 @@ import {
   http,
   encodeFunctionData
 } from 'viem'
-
-import { useState } from 'react'
 
 import { baseSepolia } from 'viem/chains'
 
@@ -53,6 +51,7 @@ function App() {
   const [proposalId, setProposalId] = useState('')
   const [proposalState, setProposalState] = useState('')
   const [delegateAddress, setDelegateAddress] = useState('')
+  const [subgraphProposals, setSubgraphProposals] = useState([])
 
   const {
     writeContractAsync
@@ -99,82 +98,82 @@ function App() {
 
   async function handleDeposit() {
 
-  try {
+    try {
 
-    const amount = parseEther(depositAmount)
+      const amount = parseEther(depositAmount)
 
-    const approveHash = await writeContractAsync({
-      address: TOKEN_ADDRESS,
-      abi: tokenABI,
-      functionName: 'approve',
-      args: [VAULT_ADDRESS, amount],
-    })
+      const approveHash = await writeContractAsync({
+        address: TOKEN_ADDRESS,
+        abi: tokenABI,
+        functionName: 'approve',
+        args: [VAULT_ADDRESS, amount],
+      })
 
-    await publicClient.waitForTransactionReceipt({
-      hash: approveHash
-    })
+      await publicClient.waitForTransactionReceipt({
+        hash: approveHash
+      })
 
-    const depositHash = await writeContractAsync({
-      address: VAULT_ADDRESS,
-      abi: vaultABI,
-      functionName: 'deposit',
-      args: [amount, address],
-    })
+      const depositHash = await writeContractAsync({
+        address: VAULT_ADDRESS,
+        abi: vaultABI,
+        functionName: 'deposit',
+        args: [amount, address],
+      })
 
-    await publicClient.waitForTransactionReceipt({
-      hash: depositHash
-    })
+      await publicClient.waitForTransactionReceipt({
+        hash: depositHash
+      })
 
-    await refetchBalance()
-    await refetchVotes()
+      await refetchBalance()
+      await refetchVotes()
 
-    alert('Deposit successful')
+      alert('Deposit successful')
 
-  } catch (err) {
+    } catch (err) {
 
-    console.log(err)
+      console.log(err)
 
-    if (err.shortMessage) {
-      alert(err.shortMessage)
-    } else {
-      alert('Transaction failed')
+      if (err.shortMessage) {
+        alert(err.shortMessage)
+      } else {
+        alert('Transaction failed')
+      }
+
     }
 
   }
 
-}
+  async function delegateVotes() {
 
- async function delegateVotes() {
+    try {
 
-  try {
+      const hash = await writeContractAsync({
+        address: TOKEN_ADDRESS,
+        abi: tokenABI,
+        functionName: 'delegate',
+        args: [delegateAddress],
+      })
 
-    const hash = await writeContractAsync({
-      address: TOKEN_ADDRESS,
-      abi: tokenABI,
-      functionName: 'delegate',
-      args: [delegateAddress],
-    })
+      await publicClient.waitForTransactionReceipt({
+        hash
+      })
 
-    await publicClient.waitForTransactionReceipt({
-      hash
-    })
+      await refetchVotes()
+      await refetchDelegates()
 
-    await refetchVotes()
-    await refetchDelegates()
+      alert('Delegation successful')
 
-    alert('Delegation successful')
+    } catch (err) {
 
-  } catch (err) {
+      console.log(err)
 
-    console.log(err)
+      if (err.shortMessage) {
+        alert(err.shortMessage)
+      } else {
+        alert('Delegation failed')
+      }
 
-    if (err.shortMessage) {
-      alert(err.shortMessage)
-    } else {
-      alert('Delegation failed')
     }
-
-  }
 
 
     try {
@@ -310,8 +309,52 @@ function App() {
 
     }
 
-  }
 
+  }
+  useEffect(() => {
+
+    async function fetchSubgraphData() {
+
+      try {
+
+        const response = await fetch(
+          'https://api.studio.thegraph.com/query/1753362/rwa-dao-subgraph/v0.0.2',
+          {
+            method: 'POST',
+
+            headers: {
+              'Content-Type': 'application/json',
+            },
+
+            body: JSON.stringify({
+              query: `
+              {
+                proposals(first: 5, orderBy: timestamp, orderDirection: desc) {
+                  proposalId
+                  description
+                  proposer
+                }
+              }
+            `
+            })
+          }
+        )
+
+        const result = await response.json()
+
+        setSubgraphProposals(result.data.proposals)
+
+      } catch (err) {
+
+        console.log(err)
+
+      }
+
+    }
+
+    fetchSubgraphData()
+
+  }, [])
   return (
 
     <div className="app">
@@ -538,6 +581,69 @@ function App() {
           </div>
 
           <div className="gov-grid">
+            <div
+  className="white-card"
+  style={{ color: '#2f3b2f' }}
+>
+
+              <p className="stat-label">
+                Indexed Governance Proposals
+              </p>
+
+              {
+                subgraphProposals.length === 0 ? (
+
+                  <p>No indexed proposals yet</p>
+
+                ) : (
+
+                  subgraphProposals.map((proposal, index) => (
+
+                    <div
+                      key={index}
+                      style={{
+                        marginBottom: '20px',
+                        paddingBottom: '20px',
+                        borderBottom: '1px solid #d6d3c9'
+                      }}
+                    >
+
+                      <p
+                        style={{
+                          fontWeight: '700',
+                          marginBottom: '10px'
+                          
+                        }}
+                      >
+                        Proposal #{proposal.proposalId}
+                      </p>
+
+                      <p
+                        style={{
+                          fontSize: '14px',
+                          marginBottom: '10px'
+                        }}
+                      >
+                        {proposal.description}
+                      </p>
+
+                      <p
+                        style={{
+                          fontSize: '12px',
+                          opacity: 0.7
+                        }}
+                      >
+                        {proposal.proposer}
+                      </p>
+
+                    </div>
+
+                  ))
+
+                )
+              }
+
+            </div>
 
             <div className="white-card">
 
