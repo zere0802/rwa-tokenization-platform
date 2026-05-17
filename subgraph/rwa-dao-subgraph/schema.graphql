@@ -1,0 +1,41 @@
+type Deposit @entity(immutable: true) {
+  id: ID!
+  caller: Bytes!
+  owner: Bytes!
+  assets: BigInt!
+  shares: BigInt!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type Proposal @entity(immutable: true) {
+  id: ID!
+  proposalId: BigInt!
+  proposer: Bytes!
+  description: String!
+  startBlock: BigInt!
+  endBlock: BigInt!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+}
+
+type Vote @entity(immutable: true) {
+  id: ID!
+  voter: Bytes!
+  proposalId: BigInt!
+  support: Int!
+  weight: BigInt!
+  reason: String
+  blockNumber: BigInt!
+  timestamp: BigInt!
+}
+
+type DelegateChange @entity(immutable: true) {
+  id: ID!
+  delegator: Bytes!
+  fromDelegate: Bytes!
+  toDelegate: Bytes!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+}

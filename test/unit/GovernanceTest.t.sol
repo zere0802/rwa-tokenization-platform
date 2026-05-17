@@ -18,72 +18,70 @@ contract GovernanceTest is Test {
     address voter = address(1);
 
     function setUp() public {
-        token = new RWAToken();
+    token = new RWAToken();
 
-        token.delegate(address(this));
+    address[] memory proposers =
+        new address[](1);
 
-        vm.roll(block.number + 1);
+    address[] memory executors =
+        new address[](1);
 
-        address[] memory proposers = new address[](1);
+    executors[0] = address(0);
 
-        proposers[0] = address(governance);
+    timelock = new TimelockController(
+        2 days,
+        proposers,
+        executors,
+        address(this)
+    );
 
-        address[] memory executors = new address[](1);
+    governance = new Governance(
+        token,
+        timelock
+    );
 
-        executors[0] = address(0);
+    proposers[0] = address(governance);
 
-        timelock = new TimelockController(
-            2 days,
-            proposers,
-            executors,
-            address(this)
-        );
+    bytes32 proposerRole =
+        keccak256("PROPOSER_ROLE");
 
-        governance = new Governance(
-            token,
-            timelock
-        );
+    bytes32 executorRole =
+        keccak256("EXECUTOR_ROLE");
 
-        bytes32 proposerRole =
-            keccak256("PROPOSER_ROLE");
+    bytes32 adminRole =
+        keccak256("TIMELOCK_ADMIN_ROLE");
 
-        bytes32 executorRole =
-            keccak256("EXECUTOR_ROLE");
+    timelock.grantRole(
+        proposerRole,
+        address(governance)
+    );
 
-        bytes32 adminRole =
-            keccak256("TIMELOCK_ADMIN_ROLE");
+    timelock.grantRole(
+        executorRole,
+        address(0)
+    );
 
-        timelock.grantRole(
-            proposerRole,
-            address(governance)
-        );
+    timelock.revokeRole(
+        adminRole,
+        address(this)
+    );
 
-        timelock.grantRole(
-            executorRole,
-            address(0)
-        );
+    token.transfer(
+        voter,
+        100_000 ether
+    );
 
-        timelock.revokeRole(
-            adminRole,
-            address(this)
-        );
+    vm.prank(voter);
 
-        token.transfer(
-            voter,
-            100_000 ether
-        );
+    token.delegate(voter);
 
-        vm.prank(voter);
+    vm.roll(block.number + 1);
 
-        token.delegate(voter);
-
-        vm.roll(block.number + 1);
-
-        token.grantRole(
-            token.ISSUER_ROLE(),
-            address(timelock)
-        );
-    }
+    token.grantRole(
+        token.ISSUER_ROLE(),
+        address(timelock)
+    );
+}
 
     function testProposalLifecycle()
         public
