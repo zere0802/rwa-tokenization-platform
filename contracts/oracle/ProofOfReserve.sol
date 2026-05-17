@@ -13,8 +13,7 @@ import "../interfaces/AggregatorV3Interface.sol";
 ///      We compare this against the current on-chain token supply (scaled to 8 decimals to match
 ///      the Chainlink PoR feed precision).
 contract ProofOfReserve is AccessControl {
-    bytes32 public constant RESERVE_ADMIN_ROLE =
-        keccak256("RESERVE_ADMIN_ROLE");
+    bytes32 public constant RESERVE_ADMIN_ROLE = keccak256("RESERVE_ADMIN_ROLE");
 
     /// @notice The Chainlink Proof of Reserve aggregator feed
     AggregatorV3Interface public reserveFeed;
@@ -25,22 +24,13 @@ contract ProofOfReserve is AccessControl {
     // ─── Errors ──────────────────────────────────────────────────────────────
 
     error StaleReserveData();
-    error InsufficientReserves(
-        int256 reserveBalance,
-        uint256 onChainSupply
-    );
+    error InsufficientReserves(int256 reserveBalance, uint256 onChainSupply);
     error InvalidReserveData();
 
     // ─── Events ──────────────────────────────────────────────────────────────
 
-    event ReserveFeedUpdated(
-        address indexed oldFeed,
-        address indexed newFeed
-    );
-    event ReserveCheckPassed(
-        int256 reserveBalance,
-        uint256 onChainSupply
-    );
+    event ReserveFeedUpdated(address indexed oldFeed, address indexed newFeed);
+    event ReserveCheckPassed(int256 reserveBalance, uint256 onChainSupply);
 
     constructor(address feed) {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -51,13 +41,7 @@ contract ProofOfReserve is AccessControl {
     /// @notice Returns the latest reserve balance reported by the Chainlink PoR feed.
     ///         Reverts if the data is stale (older than STALE_TIME).
     function getReserveBalance() public view returns (int256 balance) {
-        (
-            ,
-            int256 answer,
-            ,
-            uint256 updatedAt,
-
-        ) = reserveFeed.latestRoundData();
+        (, int256 answer,, uint256 updatedAt,) = reserveFeed.latestRoundData();
 
         // Checks: data must be fresh
         if (block.timestamp - updatedAt > STALE_TIME) {
@@ -77,9 +61,7 @@ contract ProofOfReserve is AccessControl {
     /// @param onChainSupplyWei  Current total supply of the RWA token (18-decimal wei)
     /// @dev   The PoR feed uses 8 decimals. We scale the on-chain supply down to 8 decimals
     ///        for a like-for-like comparison.
-    function checkReserves(
-        uint256 onChainSupplyWei
-    ) external {
+    function checkReserves(uint256 onChainSupplyWei) external {
         int256 reserveBalance = getReserveBalance();
 
         // Convert 18-decimal supply to 8-decimal for comparison with PoR feed
@@ -87,10 +69,7 @@ contract ProofOfReserve is AccessControl {
 
         // Checks: reserves must cover supply
         if (reserveBalance < int256(supplyIn8Decimals)) {
-            revert InsufficientReserves(
-                reserveBalance,
-                supplyIn8Decimals
-            );
+            revert InsufficientReserves(reserveBalance, supplyIn8Decimals);
         }
 
         emit ReserveCheckPassed(reserveBalance, supplyIn8Decimals);
@@ -98,9 +77,7 @@ contract ProofOfReserve is AccessControl {
 
     /// @notice Update the PoR feed address (e.g., if Chainlink rotates the feed)
     /// @param newFeed  New Chainlink PoR aggregator address
-    function setReserveFeed(
-        address newFeed
-    ) external onlyRole(RESERVE_ADMIN_ROLE) {
+    function setReserveFeed(address newFeed) external onlyRole(RESERVE_ADMIN_ROLE) {
         address old = address(reserveFeed);
         reserveFeed = AggregatorV3Interface(newFeed);
         emit ReserveFeedUpdated(old, newFeed);

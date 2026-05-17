@@ -14,83 +14,44 @@ contract RWAFactoryTest is Test {
     }
 
     function testCreateToken() public {
-        address token =
-            factory.createToken();
+        address token = factory.createToken();
 
-        assertTrue(
-            token != address(0)
-        );
+        assertTrue(token != address(0));
     }
 
     function testCreate2Token() public {
-        bytes32 salt =
-            keccak256("RWA");
+        bytes32 salt = keccak256("RWA");
 
-        address token =
-            factory.createTokenDeterministic(
-                salt
-            );
+        address token = factory.createTokenDeterministic(salt);
 
-        assertTrue(
-            token != address(0)
-        );
+        assertTrue(token != address(0));
     }
 
-    function testPredictAddress()
-        public
-    {
-        bytes32 salt =
-            keccak256("TEST");
+    function testPredictAddress() public {
+        bytes32 salt = keccak256("TEST");
 
-        address predicted =
-            factory.predictAddress(
-                salt
-            );
+        address predicted = factory.predictAddress(salt);
 
-        address deployed =
-            factory.createTokenDeterministic(
-                salt
-            );
+        address deployed = factory.createTokenDeterministic(salt);
 
-        assertEq(
-            predicted,
-            deployed
-        );
+        assertEq(predicted, deployed);
     }
 
-    function testCannotReuseSalt()
-        public
-    {
-        bytes32 salt =
-            keccak256("DUPLICATE");
+    function testCannotReuseSalt() public {
+        bytes32 salt = keccak256("DUPLICATE");
 
-        factory
-            .createTokenDeterministic(
-                salt
-            );
+        factory.createTokenDeterministic(salt);
 
         vm.expectRevert();
 
-        factory
-            .createTokenDeterministic(
-                salt
-            );
+        factory.createTokenDeterministic(salt);
     }
 
-    function testCreatedTokenWorks()
-        public
-    {
-        address tokenAddress =
-            factory.createToken();
+    function testCreatedTokenWorks() public {
+        address tokenAddress = factory.createToken();
 
-        RWAToken token =
-            RWAToken(
-                tokenAddress
-            );
+        RWAToken token = RWAToken(tokenAddress);
 
-        assertEq(
-            token.totalSupply(),
-            1_000_000 ether
-        );
+        assertEq(token.totalSupply(), 1_000_000 ether);
     }
 }

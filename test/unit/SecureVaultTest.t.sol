@@ -22,7 +22,7 @@ contract SecureVaultTest is Test {
         // The attack should revert because withdraw() is protected by nonReentrant
         vm.expectRevert();
         attacker.attack{value: 1 ether}();
-        
+
         // Attacker balance should be less than or equal to 1 ether (it couldn't drain the vault)
         assertLe(address(attacker).balance, 1 ether);
     }

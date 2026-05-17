@@ -8,18 +8,11 @@ contract VulnerableTreasury {
         treasuryFunds = msg.value;
     }
 
-    function withdrawAll(
-        address payable to
-    ) external {
-        uint256 amount =
-            address(this).balance;
+    function withdrawAll(address payable to) external {
+        uint256 amount = address(this).balance;
 
-        (bool success, ) =
-            to.call{value: amount}("");
+        (bool success,) = to.call{value: amount}("");
 
-        require(
-            success,
-            "Transfer failed"
-        );
+        require(success, "Transfer failed");
     }
 }

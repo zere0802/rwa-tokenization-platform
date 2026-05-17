@@ -2,10 +2,7 @@
 pragma solidity ^0.8.24;
 
 interface IVault {
-    function deposit()
-        external
-        payable;
+    function deposit() external payable;
 
-    function withdraw()
-        external;
+    function withdraw() external;
 }

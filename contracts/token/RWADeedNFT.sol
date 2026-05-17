@@ -19,11 +19,7 @@ contract RWADeedNFT is ERC721, AccessControl {
     /// @notice URI of asset metadata (e.g., IPFS link to legal deed document)
     mapping(uint256 => string) private _tokenURIs;
 
-    event DeedMinted(
-        address indexed to,
-        uint256 indexed tokenId,
-        string metadataURI
-    );
+    event DeedMinted(address indexed to, uint256 indexed tokenId, string metadataURI);
 
     constructor() ERC721("RWA Asset Deed", "RWADEED") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -33,10 +29,11 @@ contract RWADeedNFT is ERC721, AccessControl {
     /// @notice Mint a new deed NFT to a recipient, with a metadata URI pointing to legal deed documents
     /// @param to  Recipient of the deed NFT
     /// @param metadataURI  IPFS or HTTPS link to the off-chain legal deed document
-    function mintDeed(
-        address to,
-        string calldata metadataURI
-    ) external onlyRole(MINTER_ROLE) returns (uint256 tokenId) {
+    function mintDeed(address to, string calldata metadataURI)
+        external
+        onlyRole(MINTER_ROLE)
+        returns (uint256 tokenId)
+    {
         tokenId = _nextTokenId++;
         _safeMint(to, tokenId);
         _tokenURIs[tokenId] = metadataURI;
@@ -44,9 +41,7 @@ contract RWADeedNFT is ERC721, AccessControl {
     }
 
     /// @notice Returns the metadata URI for a given deed token
-    function tokenURI(
-        uint256 tokenId
-    ) public view override returns (string memory) {
+    function tokenURI(uint256 tokenId) public view override returns (string memory) {
         _requireOwned(tokenId);
         return _tokenURIs[tokenId];
     }
@@ -57,9 +52,7 @@ contract RWADeedNFT is ERC721, AccessControl {
     }
 
     /// @dev Resolve diamond inheritance for supportsInterface
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view override(ERC721, AccessControl) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view override(ERC721, AccessControl) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 }
