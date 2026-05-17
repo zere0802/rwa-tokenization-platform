@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&display=swap");
 
 * {
   margin: 0;
@@ -7,7 +7,7 @@
 }
 
 body {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: "Space Grotesk", sans-serif;
   background: #f5f1e8;
   color: #2f3a2f;
 }
@@ -15,12 +15,7 @@ body {
 .app {
   min-height: 100vh;
   overflow-x: hidden;
-  background: linear-gradient(
-    135deg,
-    #f5f1e8 0%,
-    #ebe3d1 45%,
-    #dbe4cf 100%
-  );
+  background: linear-gradient(135deg, #f5f1e8 0%, #ebe3d1 45%, #dbe4cf 100%);
 }
 
 .hero {
@@ -317,7 +312,6 @@ body {
 }
 
 @media (max-width: 1100px) {
-
   .hero-grid,
   .gov-grid {
     grid-template-columns: 1fr;
@@ -326,11 +320,9 @@ body {
   .hero-title {
     font-size: 60px;
   }
-
 }
 
 @media (max-width: 700px) {
-
   .hero,
   .section {
     padding-left: 20px;
@@ -353,18 +345,15 @@ body {
     align-items: stretch;
   }
 
-@keyframes slideIn {
+  @keyframes slideIn {
+    from {
+      transform: translateX(100px);
+      opacity: 0;
+    }
 
-  from {
-    transform: translateX(100px);
-    opacity: 0;
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
   }
-
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-
-}
-
 }
