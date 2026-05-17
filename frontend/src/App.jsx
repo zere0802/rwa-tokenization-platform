@@ -6,7 +6,8 @@ import {
   useDisconnect,
   useChainId,
   useReadContract,
-  useWriteContract
+  useWriteContract,
+  usePublicClient
 } from 'wagmi'
 
 import { injected } from 'wagmi/connectors'
@@ -20,20 +21,14 @@ import {
 } from 'viem'
 
 import { baseSepolia } from 'viem/chains'
+import { anvil } from './wagmi'
 
 import {
-  TOKEN_ADDRESS,
-  GOVERNOR_ADDRESS,
-  VAULT_ADDRESS,
+  CONTRACTS,
   tokenABI,
   vaultABI,
   governorABI
 } from './contracts'
-
-const publicClient = createPublicClient({
-  chain: baseSepolia,
-  transport: http(),
-})
 
 function App() {
 
@@ -44,10 +39,16 @@ function App() {
   const { disconnect } = useDisconnect()
 
   const chainId = useChainId()
+  const publicClient = usePublicClient()
+
+  const addresses = CONTRACTS[chainId] || CONTRACTS[31337]
+  const tokenAddress = addresses.TOKEN
+  const governorAddress = addresses.GOVERNOR
+  const vaultAddress = addresses.VAULT
 
   const correctChain = 84532
   const wrongNetwork =
-    chainId !== 84532
+    isConnected && chainId !== 84532 && chainId !== 31337
 
   const [depositAmount, setDepositAmount] = useState('')
   const [proposalId, setProposalId] = useState('')
@@ -56,6 +57,18 @@ function App() {
   const [delegateAddress, setDelegateAddress] = useState('')
   const [subgraphProposals, setSubgraphProposals] = useState([])
   const [subgraphVotes, setSubgraphVotes] = useState([])
+
+  useEffect(() => {
+    console.log("=== RWA PLATFORM DEBUG INFO ===");
+    console.log("Wallet Connected:", isConnected);
+    console.log("Connected Address:", address);
+    console.log("Active Chain ID:", chainId);
+    console.log("Active RPC Client:", publicClient ? "Ready" : "Missing");
+    console.log("Resolved Token Address:", tokenAddress);
+    console.log("Resolved Governor Address:", governorAddress);
+    console.log("Resolved Vault Address:", vaultAddress);
+    console.log("===============================");
+  }, [isConnected, address, chainId, publicClient, tokenAddress, governorAddress, vaultAddress])
 
   const [txMessage, setTxMessage] =
     useState('')
@@ -71,12 +84,12 @@ function App() {
     data: balance,
     refetch: refetchBalance
   } = useReadContract({
-    address: TOKEN_ADDRESS,
+    address: tokenAddress,
     abi: tokenABI,
     functionName: 'balanceOf',
     args: [address],
     query: {
-      enabled: !!address,
+      enabled: !!address && !!tokenAddress,
     }
   })
 
@@ -84,12 +97,12 @@ function App() {
     data: votes,
     refetch: refetchVotes
   } = useReadContract({
-    address: TOKEN_ADDRESS,
+    address: tokenAddress,
     abi: tokenABI,
     functionName: 'getVotes',
     args: [address],
     query: {
-      enabled: !!address,
+      enabled: !!address && !!tokenAddress,
     }
   })
 
@@ -97,12 +110,12 @@ function App() {
     data: delegates,
     refetch: refetchDelegates
   } = useReadContract({
-    address: TOKEN_ADDRESS,
+    address: tokenAddress,
     abi: tokenABI,
     functionName: 'delegates',
     args: [address],
     query: {
-      enabled: !!address,
+      enabled: !!address && !!tokenAddress,
     }
   })
 
@@ -112,7 +125,7 @@ function App() {
 
       const hash = await writeContractAsync({
 
-        address: VAULT_ADDRESS,
+        address: vaultAddress,
 
         abi: vaultABI,
 
@@ -185,11 +198,11 @@ setTxMessage(
   try {
 
     const hash = await writeContractAsync({
-      address: TOKEN_ADDRESS,
+      address: tokenAddress,
       abi: tokenABI,
       functionName: 'approve',
       args: [
-        VAULT_ADDRESS,
+        vaultAddress,
         parseEther('1000000')
       ],
     })
@@ -222,7 +235,7 @@ setTxMessage(
   try {
 
     const hash = await writeContractAsync({
-      address: TOKEN_ADDRESS,
+      address: tokenAddress,
       abi: tokenABI,
       functionName: 'delegate',
       args: [delegateAddress],
@@ -264,29 +277,36 @@ setTxMessage(
       abi: tokenABI,
       functionName: 'approve',
       args: [
-        VAULT_ADDRESS,
+        vaultAddress,
         parseEther('1')
       ],
     })
 
     const hash = await writeContractAsync({
-      address: GOVERNOR_ADDRESS,
+      address: governorAddress,
       abi: governorABI,
       functionName: 'propose',
 
       args: [
-        [TOKEN_ADDRESS],
+        [tokenAddress],
         [0],
         [calldata],
         proposalTitle
       ],
     })
 
+    await publicClient.waitForTransactionReceipt({ hash })
+
     setTxError(false)
 
     setTxMessage(
       'Proposal created successfully'
     )
+
+    // Delay reload to let user see success message, then reload to update on-chain list
+    setTimeout(() => {
+      window.location.reload()
+    }, 1500)
 
   } catch (err) {
 
@@ -305,8 +325,8 @@ setTxMessage(
 
   try {
 
-    await writeContractAsync({
-      address: GOVERNOR_ADDRESS,
+    const hash = await writeContractAsync({
+      address: governorAddress,
       abi: governorABI,
       functionName: 'castVote',
 
@@ -316,6 +336,8 @@ setTxMessage(
       ],
     })
 
+    await publicClient.waitForTransactionReceipt({ hash })
+
     setTxError(false)
 
     setTxMessage(
@@ -323,6 +345,10 @@ setTxMessage(
         ? 'Vote FOR submitted successfully'
         : 'Vote AGAINST submitted successfully'
     )
+
+    setTimeout(() => {
+      window.location.reload()
+    }, 1500)
 
   } catch (err) {
 
@@ -342,7 +368,7 @@ setTxMessage(
     try {
 
       const result = await publicClient.readContract({
-        address: GOVERNOR_ADDRESS,
+        address: governorAddress,
         abi: governorABI,
         functionName: 'state',
         args: [BigInt(proposalId)],
@@ -377,74 +403,120 @@ setTxMessage(
 
   useEffect(() => {
 
-    async function fetchSubgraphData() {
-
-      try {
-
-        const response = await fetch(
-          'https://api.studio.thegraph.com/query/1753362/rwa-dao-subgraph/v0.0.2',
-          {
-            method: 'POST',
-
-            headers: {
-              'Content-Type': 'application/json',
+    async function fetchData() {
+      if (chainId === 31337) {
+        if (!publicClient || !governorAddress) return
+        try {
+          // Dynamic query direct from local Anvil node using Event Logs!
+          const proposalLogs = await publicClient.getLogs({
+            address: governorAddress,
+            event: {
+              type: 'event',
+              name: 'ProposalCreated',
+              inputs: [
+                { type: 'uint256', name: 'proposalId', indexed: false },
+                { type: 'address', name: 'proposer', indexed: true },
+                { type: 'address[]', name: 'targets', indexed: false },
+                { type: 'uint256[]', name: 'values', indexed: false },
+                { type: 'string[]', name: 'signatures', indexed: false },
+                { type: 'bytes[]', name: 'calldatas', indexed: false },
+                { type: 'uint256', name: 'voteStart', indexed: false },
+                { type: 'uint256', name: 'voteEnd', indexed: false },
+                { type: 'string', name: 'description', indexed: false },
+              ],
             },
+            fromBlock: 0n,
+          })
 
-            body: JSON.stringify({
-              query: `
+          const parsedProposals = proposalLogs.map(log => ({
+            proposalId: log.args.proposalId.toString(),
+            description: log.args.description,
+            proposer: log.args.proposer,
+          })).reverse() // show latest first
+
+          setSubgraphProposals(parsedProposals)
+
+          const voteLogs = await publicClient.getLogs({
+            address: governorAddress,
+            event: {
+              type: 'event',
+              name: 'VoteCast',
+              inputs: [
+                { type: 'address', name: 'voter', indexed: true },
+                { type: 'uint256', name: 'proposalId', indexed: true },
+                { type: 'uint8', name: 'support', indexed: false },
+                { type: 'uint256', name: 'weight', indexed: false },
+                { type: 'string', name: 'reason', indexed: false },
+              ],
+            },
+            fromBlock: 0n,
+          })
+
+          const parsedVotes = voteLogs.map(log => ({
+            voter: log.args.voter,
+            proposalId: log.args.proposalId.toString(),
+            support: log.args.support,
+            weight: log.args.weight.toString(),
+          })).reverse() // show latest first
+
+          setSubgraphVotes(parsedVotes)
+
+        } catch (err) {
+          console.error("Error fetching local event logs:", err)
+        }
+      } else {
+        // Sepolia: Query from The Graph subgraph
+        try {
+          const response = await fetch(
+            'https://api.studio.thegraph.com/query/1753362/rwa-dao-subgraph/v0.0.2',
             {
-              proposals(
-                first: 5,
-                orderBy: timestamp,
-                orderDirection: desc
-              ) {
-                proposalId
-                description
-                proposer
-              }
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                query: `
+                  {
+                    proposals(
+                      first: 5,
+                      orderBy: timestamp,
+                      orderDirection: desc
+                    ) {
+                      proposalId
+                      description
+                      proposer
+                    }
 
-              votes(
-                first: 10,
-                orderBy: timestamp,
-                orderDirection: desc
-              ) {
-                voter
-                proposalId
-                support
-                weight
-              }
+                    votes(
+                      first: 10,
+                      orderBy: timestamp,
+                      orderDirection: desc
+                    ) {
+                      voter
+                      proposalId
+                      support
+                      weight
+                    }
+                  }
+                `
+              })
             }
-          `
-            })
+          )
+
+          const result = await response.json()
+          if (result?.data) {
+            setSubgraphProposals(result.data.proposals || [])
+            setSubgraphVotes(result.data.votes || [])
           }
-        )
-
-        const result = await response.json()
-
-        setSubgraphProposals(
-          result.data.proposals
-        )
-
-        setSubgraphVotes(
-          result.data.votes
-        )
-
-      } catch (err) {
-
-        setTxError(true)
-
-setTxMessage(
-  err.shortMessage ||
-  'Transaction failed'
-)
-
+        } catch (err) {
+          console.error("Error fetching subgraph data:", err)
+        }
       }
-
     }
 
-    fetchSubgraphData()
+    fetchData()
 
-  }, [])
+  }, [chainId, publicClient, governorAddress])
 
   return (
 
@@ -468,7 +540,7 @@ setTxMessage(
               }}
             >
               Wrong network detected.
-              Please switch to Base Sepolia.
+              Please switch to Base Sepolia or Localhost.
             </div>
 
           )
@@ -639,7 +711,7 @@ setTxMessage(
                 </div>
 
                 <div className="network-badge">
-                  Base Sepolia
+                  {chainId === 31337 ? 'Localhost (Anvil)' : 'Base Sepolia'}
                 </div>
 
               </div>
@@ -868,7 +940,7 @@ setTxMessage(
                         {proposal.description}
                       </p>
                       <a
-                        href={`https://sepolia.basescan.org/address/${GOVERNOR_ADDRESS}`}
+                        href={chainId === 31337 ? '#' : `https://sepolia.basescan.org/address/${governorAddress}`}
                         target="_blank"
                         rel="noreferrer"
                         style={{
@@ -876,10 +948,12 @@ setTxMessage(
                           fontWeight: '600',
                           textDecoration: 'none',
                           marginTop: '12px',
-                          display: 'inline-block'
+                          display: 'inline-block',
+                          opacity: chainId === 31337 ? 0.5 : 1,
+                          pointerEvents: chainId === 31337 ? 'none' : 'auto'
                         }}
                       >
-                        View Governance Contract →
+                        {chainId === 31337 ? 'Governance Contract (Local)' : 'View Governance Contract →'}
                       </a>
                       <p
                         style={{
@@ -1085,9 +1159,11 @@ setTxMessage(
 
                 <h3 className="network-value">
                   {
-                    chainId === correctChain
+                    chainId === 84532
                       ? 'Base Sepolia'
-                      : 'Wrong Network'
+                      : chainId === 31337
+                        ? 'Localhost (Anvil)'
+                        : 'Wrong Network'
                   }
                 </h3>
 

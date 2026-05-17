@@ -3,32 +3,27 @@ pragma solidity ^0.8.24;
 
 import "forge-std/Test.sol";
 
-import "../../contracts/utils/YulMath.sol";
+import "../../contracts/mocks/SecureVault.sol";
+import "../../contracts/mocks/ReentrancyAttacker.sol";
 
-contract YulMathTest is Test {
-    YulMath math;
+contract SecureVaultTest is Test {
+    SecureVault vault;
+    ReentrancyAttacker attacker;
 
     function setUp() public {
-        math = new YulMath();
+        vault = new SecureVault();
+        attacker = new ReentrancyAttacker(address(vault));
+        vm.deal(address(attacker), 1 ether);
+        vm.deal(address(this), 10 ether);
+        vault.deposit{value: 5 ether}();
     }
 
-    function testAddYul() public {
-        uint256 result = math.addYul(2, 3);
-
-        assertEq(result, 5);
-    }
-
-    function testMultiplyYul() public {
-        uint256 result = math.multiplyYul(4, 5);
-
-        assertEq(result, 20);
-    }
-
-    function testCompareSolidityAndYul() public {
-        uint256 solidityResult = math.addSolidity(10, 15);
-
-        uint256 yulResult = math.addYul(10, 15);
-
-        assertEq(solidityResult, yulResult);
+    function testReentrancyAttackFailsOnSecureVault() public {
+        // The attack should revert because withdraw() is protected by nonReentrant
+        vm.expectRevert();
+        attacker.attack{value: 1 ether}();
+        
+        // Attacker balance should be less than or equal to 1 ether (it couldn't drain the vault)
+        assertLe(address(attacker).balance, 1 ether);
     }
 }
