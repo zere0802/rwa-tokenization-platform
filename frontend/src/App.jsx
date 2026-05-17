@@ -57,7 +57,7 @@ function App() {
   const [delegateAddress, setDelegateAddress] = useState('')
   const [subgraphProposals, setSubgraphProposals] = useState([])
   const [subgraphVotes, setSubgraphVotes] = useState([])
-
+  const [proposalStatesMap, setProposalStatesMap] = useState({})
   useEffect(() => {
     console.log("=== RWA PLATFORM DEBUG INFO ===");
     console.log("Wallet Connected:", isConnected);
@@ -518,6 +518,42 @@ setTxMessage(
 
   }, [chainId, publicClient, governorAddress])
 
+  // Fetch state for all loaded proposals
+  useEffect(() => {
+    if (!publicClient || !governorAddress || subgraphProposals.length === 0) return
+
+    const fetchStates = async () => {
+      const states = {}
+      const stateLabels = [
+        "Pending",
+        "Active",
+        "Canceled",
+        "Defeated",
+        "Succeeded",
+        "Queued",
+        "Expired",
+        "Executed"
+      ]
+
+      for (const p of subgraphProposals) {
+        try {
+          const stateData = await publicClient.readContract({
+            address: governorAddress,
+            abi: governorABI,
+            functionName: 'state',
+            args: [BigInt(p.proposalId)]
+          })
+          states[p.proposalId] = stateLabels[stateData] || "Unknown"
+        } catch (err) {
+          states[p.proposalId] = "Pending"
+        }
+      }
+      setProposalStatesMap(states)
+    }
+
+    fetchStates()
+  }, [subgraphProposals, publicClient, governorAddress])
+
   return (
 
     <div className="app">
@@ -939,6 +975,33 @@ setTxMessage(
                       >
                         {proposal.description}
                       </p>
+
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '10px' }}>
+                        <span style={{
+                          background: proposalStatesMap[proposal.proposalId] === 'Active' ? '#dcffe0' : '#f0f0f0',
+                          color: proposalStatesMap[proposal.proposalId] === 'Active' ? '#245c2a' : '#555',
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          fontSize: '12px',
+                          fontWeight: 'bold'
+                        }}>
+                          {proposalStatesMap[proposal.proposalId] || 'Loading...'}
+                        </span>
+
+                        {proposalStatesMap[proposal.proposalId] === 'Active' && (
+                          <button
+                            onClick={() => {
+                              setProposalId(proposal.proposalId)
+                              vote()
+                            }}
+                            className="button"
+                            style={{ padding: '4px 12px', fontSize: '12px', background: '#36b359' }}
+                          >
+                            Vote (For)
+                          </button>
+                        )}
+                      </div>
+
                       <a
                         href={chainId === 31337 ? '#' : `https://sepolia.basescan.org/address/${governorAddress}`}
                         target="_blank"
