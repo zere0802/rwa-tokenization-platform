@@ -3,16 +3,22 @@
   "rules": {
     "compiler-version": ["error", "^0.8.24"],
     "const-name-snakecase": "error",
-    "contract-name-camelcase": "error",
-    "event-name-camelcase": "error",
     "func-name-mixedcase": "error",
     "var-name-mixedcase": "error",
     "imports-on-top": "error",
-    "no-empty-blocks": "warning",
+    "no-empty-blocks": "warn",
     "no-unused-vars": "error",
     "reentrancy": "error",
     "state-visibility": "error",
     "use-forbidden-name": "error",
-    "visibility-modifier-order": "error"
+    "visibility-modifier-order": "error",
+    "use-natspec": "off",
+    "no-global-import": "off",
+    "import-path-check": "off",
+    "gas-custom-errors": "off",
+    "func-visibility": "off",
+    "gas-strict-inequalities": "off",
+    "gas-indexed-events": "off",
+    "interface-starts-with-i": "off"
   }
 }
