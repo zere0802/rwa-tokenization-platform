@@ -55,7 +55,7 @@ jobs:
 
       - name: Install frontend deps
         working-directory: frontend
-        run: npm install
+        run: npm install --legacy-peer-deps
 
       - name: Prettier check (frontend)
         working-directory: frontend
